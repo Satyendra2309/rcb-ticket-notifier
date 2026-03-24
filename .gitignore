@@ -1,0 +1,19 @@
+# Environment - never commit credentials
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+ui/node_modules/
+
+# Built frontend (generated, not source)
+static/ui/assets/
+static/ui/index.html
+
+# macOS
+.DS_Store
