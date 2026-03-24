@@ -1,138 +1,75 @@
-# RCB Ticket Monitor
+# 🏏 RCB Ticket Monitor
 
-Polls [shop.royalchallengers.com/ticket](https://shop.royalchallengers.com/ticket) every 2 seconds and fires alerts the moment tickets go on sale.
+> Polls [shop.royalchallengers.com/ticket](https://shop.royalchallengers.com/ticket) every 2 seconds and fires alerts the moment RCB tickets go on sale — macOS notification, phone push, and a voice call.
+
+---
+
+## Features
+
+- **Headless browser polling** — uses Playwright + stealth to render the React SPA and bypass bot detection
+- **Multi-channel alerts** — macOS desktop notification, ntfy.sh phone push, Twilio voice call
+- **Live dashboard** — FastAPI backend + React UI with start/stop, real-time logs, LED status border, and notification test buttons
+- **Re-alerts every 5 minutes** after tickets go live until you stop it
+
+---
 
 ## Notifications
 
 | Channel | Service | Cost |
 |---|---|---|
 | macOS desktop | `terminal-notifier` | Free |
-| Phone push | ntfy.sh | Free |
-| Voice call | Twilio | ~$0.014/min (trial credit covers it) |
+| Phone push | [ntfy.sh](https://ntfy.sh) | Free |
+| Voice call | Twilio | ~$0.014/min (free trial credit covers it) |
 
-## UI
+---
 
-A live dashboard to start/stop monitoring and test all notification channels.
+## Requirements
 
-![Dark themed dashboard with start/stop button, stats, and live logs]
+- macOS (tested on macOS 13+)
+- Python 3.10+
+- Node.js 18+ (for UI build)
+- Homebrew
 
 ---
 
 ## Setup
 
-### 1. Prerequisites
+### 1. Clone and install
 
 ```bash
-# Python 3.10+
+git clone https://github.com/Satyendra2309/rcb-ticket-notifier.git
+cd rcb-ticket-notifier
+
+# Install terminal-notifier
 brew install terminal-notifier
 
-# Node 18+ required for UI (check your version)
-node --version
-
-# If on Node 16, upgrade via nvm:
-nvm install 18 && nvm use 18
-```
-
-### 2. Install Python dependencies
-
-```bash
-cd rcb-ticket-notifier
-python -m venv .venv
+# Create Python virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 playwright install chromium
 pip install playwright-stealth
 ```
 
-### 3. Fix macOS notification permissions
+### 2. Fix macOS notification permissions
 
-`terminal-notifier` needs permission to show notifications:
+`terminal-notifier` needs explicit permission:
 
-1. Run once: `terminal-notifier -title "Test" -message "Allow?"`
+1. Run once from terminal: `terminal-notifier -title "Test" -message "Allow notifications?"`
 2. Go to **System Settings → Notifications → terminal-notifier**
 3. Toggle **Allow notifications** ON
 
-### 4. Configure environment
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
-# Fill in your credentials (see sections below)
 ```
 
----
+Fill in your credentials in `.env` — see the **API Key Setup** section below.
 
-## API Key Setup
-
-### ntfy.sh — Phone Push Notification (Free, 2 min)
-
-1. Install the **ntfy** app on your phone:
-   - [iOS App Store](https://apps.apple.com/us/app/ntfy/id1625396347)
-   - [Google Play](https://play.google.com/store/apps/details?id=io.heckel.ntfy)
-2. Open the app → tap **+** → enter a unique topic name (e.g. `rcb-tickets-yourname123`)
-3. Set in `.env`:
-   ```
-   NTFY_TOPIC=rcb-tickets-yourname123
-   ```
-> Topic names are public — make it unique so strangers don't subscribe to your alerts.
-
----
-
-### Twilio — Voice Call (~10 min)
-
-#### Step 1: Create account
-1. Sign up at [twilio.com](https://twilio.com)
-2. Free trial gives ~$15 credit — more than enough
-
-#### Step 2: Get credentials
-1. Log into the [Twilio Console](https://console.twilio.com)
-2. On the **Dashboard**, copy your **Account SID** and **Auth Token**
-3. Add to `.env`:
-   ```
-   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   TWILIO_AUTH_TOKEN=your_auth_token
-   ```
-
-#### Step 3: Buy a phone number
-1. Console → **Phone Numbers → Manage → Buy a number**
-2. Select country **United States** (cheapest, ~$1/month)
-3. Ensure **Voice** capability is checked → buy it
-4. Add to `.env`:
-   ```
-   TWILIO_FROM_NUMBER=+1XXXXXXXXXX
-   ```
-
-#### Step 4: Verify your personal number
-Trial accounts can only call verified numbers:
-1. Console → **Verified Caller IDs → Add a new Caller ID**
-2. Enter your number in E.164 format (e.g. `+919876543210`)
-3. Verify via the OTP call/SMS
-4. Add to `.env`:
-   ```
-   YOUR_PHONE_NUMBER=+919876543210
-   ```
-
-> **E.164 format:** `+` → country code → number. India: `+91XXXXXXXXXX`, US: `+1XXXXXXXXXX`
-
----
-
-## Run (CLI only)
-
-```bash
-# Start polling
-uv run --with playwright-stealth python poller.py
-
-# Test all notifications fire correctly
-uv run --with playwright-stealth python test_available.py
-
-# Test unavailable scenario (no notifications)
-uv run --with playwright-stealth python test_unavailable.py
-```
-
----
-
-## Run with UI
-
-### Build the frontend
+### 4. Build the UI
 
 ```bash
 cd ui
@@ -141,28 +78,105 @@ npm run build:local
 cd ..
 ```
 
-### Start the server
+### 5. Start the server
 
 ```bash
+source .venv/bin/activate
 uvicorn api_server:app --reload
 ```
 
-Open [http://localhost:8000/ui](http://localhost:8000/ui)
+Open **[http://localhost:8000/ui](http://localhost:8000/ui)** and click **Start Monitoring**.
 
-> For frontend development with hot reload: `cd ui && npm run dev` (proxies API to port 8000)
+---
+
+## API Key Setup
+
+### ntfy.sh — Phone Push Notification (Free, 2 min)
+
+1. Install the **ntfy** app on your phone — [iOS](https://apps.apple.com/us/app/ntfy/id1625396347) / [Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy)
+2. Open the app → tap **+** → subscribe to a unique topic name (e.g. `rcb-tickets-yourname123`)
+3. Add to `.env`:
+   ```
+   NTFY_TOPIC=rcb-tickets-yourname123
+   ```
+
+> Make the topic name unique — ntfy topics are public by default.
+
+---
+
+### Twilio — Voice Call (~10 min setup)
+
+#### Step 1: Create account
+1. Sign up at [twilio.com](https://twilio.com) — free trial gives ~$15 credit
+2. Verify your email and phone number
+
+#### Step 2: Get credentials
+1. Log into the [Twilio Console](https://console.twilio.com)
+2. Copy **Account SID** and **Auth Token** from the Dashboard
+3. Add to `.env`:
+   ```
+   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   TWILIO_AUTH_TOKEN=your_auth_token
+   ```
+
+#### Step 3: Buy a phone number
+1. Console → **Phone Numbers → Manage → Buy a number**
+2. Select **United States** (cheapest, ~$1/month), ensure **Voice** is checked → buy
+3. Add to `.env`:
+   ```
+   TWILIO_FROM_NUMBER=+1XXXXXXXXXX
+   ```
+
+#### Step 4: Verify your personal number
+Trial accounts can only call verified numbers:
+1. Console → **Verified Caller IDs → Add a new Caller ID**
+2. Enter your number (e.g. `+919876543210`) and verify via OTP
+3. Add to `.env`:
+   ```
+   YOUR_PHONE_NUMBER=+919876543210
+   ```
+
+> **E.164 format:** always starts with `+`, then country code. India: `+91XXXXXXXXXX`
+
+---
+
+## Running
+
+### With UI (recommended)
+
+```bash
+source .venv/bin/activate
+uvicorn api_server:app --reload
+# Open http://localhost:8000/ui
+```
+
+### CLI only
+
+```bash
+source .venv/bin/activate
+
+# Start polling
+python poller.py
+
+# Test: simulate tickets going on sale (fires all notifications)
+python test_available.py
+
+# Test: simulate tickets unavailable (no notifications)
+python test_unavailable.py
+```
 
 ---
 
 ## How it works
 
-The RCB ticket page is a React SPA — a regular HTTP fetch returns an empty shell. We use **Playwright** (headless Chromium) to fully load and execute the page JavaScript, then wait until the DOM has rendered content. **playwright-stealth** patches the browser fingerprint to bypass Cloudflare bot detection.
+The RCB ticket page is a React SPA — a plain HTTP request returns an empty HTML shell. This tool uses **Playwright** to launch a headless Chromium browser, fully execute the JavaScript, and wait until the page content renders. **playwright-stealth** patches the browser fingerprint to bypass Cloudflare bot detection.
 
 Every 2 seconds:
 1. Navigate to the page, wait for `networkidle`
-2. Wait until `document.body.innerText.length > 50` (React has rendered)
-3. Read the full body text
+2. Wait until `document.body.innerText.length > 50` (confirms React has rendered)
+3. Read the full visible body text
 4. Check if `"Tickets not available."` is present
-5. If missing → fire all notifications, then re-alert every 5 minutes until stopped
+5. If it's gone → fire all notifications simultaneously, then re-alert every 5 minutes
 
 ---
 
@@ -171,14 +185,21 @@ Every 2 seconds:
 ```
 rcb-ticket-notifier/
 ├── poller.py              # Core polling + notification logic
-├── api_server.py          # FastAPI backend
+├── api_server.py          # FastAPI backend (REST API + serves UI)
 ├── test_available.py      # Test: fires all notifications
-├── test_unavailable.py    # Test: no notifications
-├── requirements.txt
-├── .env.example
+├── test_unavailable.py    # Test: no notifications (just logs)
+├── requirements.txt       # Python dependencies
+├── .env.example           # Environment variable template
 ├── ui/                    # React frontend (Vite + TypeScript)
-│   └── src/
-│       ├── App.tsx
-│       └── App.css
-└── static/ui/             # Built frontend (served by FastAPI at /ui)
+│   ├── src/
+│   │   ├── App.tsx
+│   │   └── App.css
+│   └── package.json
+└── static/ui/             # Built frontend (auto-generated, served at /ui)
 ```
+
+---
+
+## License
+
+MIT
